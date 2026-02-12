@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 _KEY_MAP: dict[str, str] = {
     "shodan": "shodan_api_key",
     "hunter": "hunter_api_key",
+    "virustotal": "virustotal_api_key",
 }
 
 
