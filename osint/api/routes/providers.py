@@ -11,7 +11,7 @@ from osint.providers import ALL_PROVIDERS
 
 router = APIRouter()
 
-_KEY_MAP: dict[str, str] = {
+_KEY_MAP: dict[str, str | None] = {
     "shodan": "shodan_api_key",
     "hunter": "hunter_api_key",
     "virustotal": "virustotal_api_key",
@@ -21,7 +21,13 @@ _KEY_MAP: dict[str, str] = {
     "ipinfo": "ipinfo_token",
     "numverify": "numverify_api_key",
     "opencorporates": "opencorporates_api_key",
+    "sherlock": None,
+    "maigret": None,
+    "holehe": None,
 }
+
+# Providers that don't need API keys (CLI tools)
+_NO_KEY_PROVIDERS = {"sherlock", "maigret", "holehe"}
 
 
 @router.get("/providers", response_model=ProvidersResponse)
@@ -33,7 +39,12 @@ async def list_providers() -> ProvidersResponse:
     for cls in ALL_PROVIDERS:
         name = cls.__name__.replace("Provider", "").lower()
         key_attr = _KEY_MAP.get(name, f"{name}_api_key")
-        has_key = bool(getattr(settings, key_attr, ""))
+        if name in _NO_KEY_PROVIDERS:
+            has_key = True  # CLI tools, no API key needed
+        elif key_attr is None:
+            has_key = True
+        else:
+            has_key = bool(getattr(settings, key_attr, ""))
 
         # Instantiate to get metadata
         cache = Cache(db_path=f"{settings.cache_dir}/cache.db")
