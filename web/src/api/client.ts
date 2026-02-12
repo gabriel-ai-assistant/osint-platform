@@ -9,6 +9,7 @@ import type {
   InvestigateResponse,
   LookupRequest,
   LookupResponse,
+  PhotoUploadResponse,
   ProvidersResponse,
 } from '../types';
 
@@ -65,6 +66,49 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+
+  uploadPhoto: async (file: File): Promise<PhotoUploadResponse> => {
+    const url = `${API_BASE}/photos/upload`;
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await fetch(url, {
+      method: 'POST',
+      body: formData,
+      // Do NOT set Content-Type — browser sets multipart boundary automatically
+    });
+
+    if (!res.ok) {
+      let detail = res.statusText;
+      try {
+        const body = await res.json();
+        detail = body.detail || detail;
+      } catch {
+        // ignore
+      }
+      throw new ApiError(res.status, detail);
+    }
+
+    return res.json();
+  },
+
+  deletePhoto: async (id: string): Promise<void> => {
+    const url = `${API_BASE}/photos/${id}`;
+    const res = await fetch(url, { method: 'DELETE' });
+
+    if (!res.ok) {
+      let detail = res.statusText;
+      try {
+        const body = await res.json();
+        detail = body.detail || detail;
+      } catch {
+        // ignore
+      }
+      throw new ApiError(res.status, detail);
+    }
+  },
+
+  getPhotoUrl: (id: string): string => `${API_BASE}/photos/${id}`,
 };
 
 export { ApiError };

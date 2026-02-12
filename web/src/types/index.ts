@@ -42,6 +42,28 @@ export interface InvestigateRequest {
   ip?: string;
   domain?: string;
   company?: string;
+  aliases?: string[];
+  date_of_birth?: string;
+  age_range?: string;
+  location?: string;
+  address?: string;
+  nationality?: string;
+  gender?: string;
+  employer?: string;
+  occupation?: string;
+  education?: string;
+  social_media?: Record<string, string>;
+  vehicle?: string;
+  physical_description?: string;
+  notes?: string;
+  photo_ids?: string[];
+}
+
+export interface PhotoUploadResponse {
+  id: string;
+  filename: string;
+  url: string;
+  uploaded_at: string;
 }
 
 export interface ThreatInfo {
@@ -107,6 +129,20 @@ export interface OrganizationInfo {
 
 export interface IdentityInfo {
   name?: string;
+  aliases?: string[];
+  date_of_birth?: string;
+  age_range?: string;
+  location?: string;
+  address?: string;
+  nationality?: string;
+  gender?: string;
+  employer?: string;
+  occupation?: string;
+  education?: string;
+  physical_description?: string;
+  vehicle?: string;
+  notes?: string;
+  photo_ids?: string[];
   emails: string[];
   phones: string[];
   ips: string[];
@@ -117,6 +153,7 @@ export interface IdentityInfo {
 export interface DigitalFootprint {
   sources: string[];
   urls: Record<string, any>[];
+  social_media?: Record<string, string>;
 }
 
 export interface RelationshipEdge {

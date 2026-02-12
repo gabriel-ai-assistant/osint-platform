@@ -103,6 +103,10 @@ async def investigate(req: InvestigateRequest) -> InvestigateResponse:
     if req.company:
         initial_tasks.append((req.company.strip(), "company", "company"))
 
+    # Use employer as company search if company not provided
+    if req.employer and not req.company:
+        initial_tasks.append((req.employer.strip(), "company", "employer"))
+
     # Fan out all initial queries concurrently
     coros = [_run_query(q, qt) for q, qt, _ in initial_tasks]
     results: list[AggregatedReport] = await asyncio.gather(*coros)
@@ -154,7 +158,23 @@ def _build_response(
     tasks: list[tuple[str, str, str]],
 ) -> InvestigateResponse:
     """Build the unified investigation response from all results."""
-    identity = IdentityInfo(name=req.name)
+    identity = IdentityInfo(
+        name=req.name,
+        aliases=req.aliases,
+        date_of_birth=req.date_of_birth,
+        age_range=req.age_range,
+        location=req.location,
+        address=req.address,
+        nationality=req.nationality,
+        gender=req.gender,
+        employer=req.employer,
+        occupation=req.occupation,
+        education=req.education,
+        physical_description=req.physical_description,
+        vehicle=req.vehicle,
+        notes=req.notes,
+        photo_ids=req.photo_ids,
+    )
     network = NetworkInfo()
     threats = ThreatInfo()
     geo = GeoInfo()
@@ -358,6 +378,10 @@ def _build_response(
 
                 if r.reputation_score is not None:
                     threat_scores.append(r.reputation_score * 100)
+
+    # Merge social_media from request into digital footprint
+    if req.social_media:
+        footprint.social_media = dict(req.social_media)
 
     # Build identity
     identity.emails = sorted(known_emails)

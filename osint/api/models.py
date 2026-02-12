@@ -28,6 +28,23 @@ class InvestigateRequest(BaseModel):
     domain: str | None = None
     company: str | None = None
 
+    # Extended personal identifiers
+    aliases: list[str] = Field(default_factory=list)
+    date_of_birth: str | None = None  # YYYY-MM-DD
+    age_range: str | None = None  # e.g. "30-40"
+    location: str | None = None  # City, State, Country
+    address: str | None = None  # Full street address
+    nationality: str | None = None
+    gender: str | None = None
+    employer: str | None = None  # Current workplace
+    occupation: str | None = None
+    education: str | None = None  # School/university
+    social_media: dict[str, str] = Field(default_factory=dict)  # platform -> handle/url
+    vehicle: str | None = None  # Vehicle description / plate
+    physical_description: str | None = None  # Height, weight, hair, eyes, etc.
+    notes: str | None = None  # Free-form investigator notes
+    photo_ids: list[str] = Field(default_factory=list)  # References to uploaded photos
+
 
 # ── Response Models ─────────────────────────────────────────────
 
@@ -129,6 +146,20 @@ class IdentityInfo(BaseModel):
     """Identity summary data."""
 
     name: str | None = None
+    aliases: list[str] = Field(default_factory=list)
+    date_of_birth: str | None = None
+    age_range: str | None = None
+    location: str | None = None
+    address: str | None = None
+    nationality: str | None = None
+    gender: str | None = None
+    employer: str | None = None
+    occupation: str | None = None
+    education: str | None = None
+    physical_description: str | None = None
+    vehicle: str | None = None
+    notes: str | None = None
+    photo_ids: list[str] = Field(default_factory=list)
     emails: list[str] = Field(default_factory=list)
     phones: list[str] = Field(default_factory=list)
     ips: list[str] = Field(default_factory=list)
@@ -141,6 +172,7 @@ class DigitalFootprint(BaseModel):
 
     sources: list[str] = Field(default_factory=list)
     urls: list[dict[str, Any]] = Field(default_factory=list)
+    social_media: dict[str, str] = Field(default_factory=dict)  # platform -> handle/url
 
 
 class RelationshipEdge(BaseModel):
