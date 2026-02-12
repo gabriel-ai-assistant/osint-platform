@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+/* ── Custom Theme ───────────────────────────────────────── */
+@theme {
+  --color-navy-900: #0a0e1a;
+  --color-navy-800: #0f1629;
+  --color-navy-700: #151d38;
+  --color-navy-600: #1c2647;
+  --color-navy-500: #243056;
+  --color-accent: #00d4ff;
+  --color-accent-dim: #00a4c7;
+  --color-threat: #ff3b3b;
+  --color-safe: #00ff88;
+  --color-warning: #ffaa00;
+  --color-muted: #64748b;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* ── Base ────────────────────────────────────────────────── */
+body {
+  @apply bg-navy-900 text-gray-100 font-sans antialiased;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* ── Scrollbar ──────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-navy-900;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-navy-600 rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-navy-500;
+}
+
+/* ── Leaflet Overrides ──────────────────────────────────── */
+.leaflet-container {
+  background: #0a0e1a !important;
+  border-radius: 0.5rem;
+}
+.leaflet-tile-pane {
+  filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+}
+.leaflet-control-zoom a {
+  @apply bg-navy-700 text-gray-100 border-navy-600;
+}
+.leaflet-control-attribution {
+  @apply bg-navy-800/80 text-gray-500 text-xs;
+}
+
+/* ── Pulse animation for skeleton ───────────────────────── */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+.skeleton-pulse {
+  animation: pulse-glow 1.5s ease-in-out infinite;
+  @apply bg-navy-600 rounded;
+}
+
+/* ── Glow effects ───────────────────────────────────────── */
+.glow-accent {
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.15);
+}
+.glow-threat {
+  box-shadow: 0 0 20px rgba(255, 59, 59, 0.15);
+}
+.glow-safe {
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.15);
+}
