@@ -23,6 +23,7 @@ _KEY_MAP: dict[str, str] = {
     "otx": "otx_api_key",
     "abuseipdb": "abuseipdb_api_key",
     "urlscan": "urlscan_api_key",
+    "ipinfo": "ipinfo_token",
 }
 
 

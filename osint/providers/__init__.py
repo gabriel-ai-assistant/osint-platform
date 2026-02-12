@@ -2,11 +2,12 @@
 
 from osint.providers.abuseipdb import AbuseIPDBProvider
 from osint.providers.hunter import HunterProvider
+from osint.providers.ipinfo import IPInfoProvider
 from osint.providers.otx import OTXProvider
 from osint.providers.shodan import ShodanProvider
 from osint.providers.urlscan import URLScanProvider
 from osint.providers.virustotal import VirusTotalProvider
 
-ALL_PROVIDERS = [ShodanProvider, HunterProvider, VirusTotalProvider, OTXProvider, AbuseIPDBProvider, URLScanProvider]
+ALL_PROVIDERS = [ShodanProvider, HunterProvider, VirusTotalProvider, OTXProvider, AbuseIPDBProvider, URLScanProvider, IPInfoProvider]
 
 __all__ = ["ALL_PROVIDERS", "ShodanProvider", "HunterProvider", "VirusTotalProvider", "OTXProvider", "AbuseIPDBProvider", "URLScanProvider"]
