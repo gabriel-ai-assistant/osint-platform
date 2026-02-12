@@ -24,6 +24,7 @@ _KEY_MAP: dict[str, str] = {
     "abuseipdb": "abuseipdb_api_key",
     "urlscan": "urlscan_api_key",
     "ipinfo": "ipinfo_token",
+    "numverify": "numverify_api_key",
 }
 
 
@@ -32,6 +33,12 @@ def detect_query_type(query: str) -> str:
     # IP address
     if re.match(r"^\d{1,3}(\.\d{1,3}){3}$", query):
         return "ip"
+    # Phone (starts with + or is mostly digits)
+    stripped = query.replace("-", "").replace(" ", "").replace("(", "").replace(")", "")
+    if stripped.startswith("+") and stripped[1:].isdigit() and len(stripped) >= 10:
+        return "phone"
+    if stripped.isdigit() and len(stripped) >= 10:
+        return "phone"
     # Email
     if "@" in query and "." in query.split("@")[-1]:
         return "email"

@@ -17,6 +17,7 @@ from osint.core.models import (
     EmailReport,
     IPReport,
 )
+from osint.providers.numverify import PhoneReport
 from osint.providers import ALL_PROVIDERS
 
 console = Console()
@@ -24,6 +25,12 @@ console = Console()
 _KEY_MAP: dict[str, str] = {
     "shodan": "shodan_api_key",
     "hunter": "hunter_api_key",
+    "virustotal": "virustotal_api_key",
+    "otx": "otx_api_key",
+    "abuseipdb": "abuseipdb_api_key",
+    "urlscan": "urlscan_api_key",
+    "ipinfo": "ipinfo_token",
+    "numverify": "numverify_api_key",
 }
 
 
@@ -50,6 +57,8 @@ def _render_report(report: AggregatedReport) -> None:
             _render_domain(r)
         elif isinstance(r, EmailReport):
             _render_email(r)
+        elif isinstance(r, PhoneReport):
+            _render_phone(r)
         else:
             console.print(f"[dim]{r.provider}: {r}[/dim]")
 
@@ -123,6 +132,23 @@ def _render_email(r: EmailReport) -> None:
     console.print(table)
 
 
+def _render_phone(r: PhoneReport) -> None:
+    table = Table(title=f"Phone Report — {r.provider}", show_lines=True)
+    table.add_column("Field", style="cyan")
+    table.add_column("Value")
+
+    table.add_row("Phone", r.phone)
+    table.add_row("Valid", str(r.valid) if r.valid is not None else "—")
+    table.add_row("International", r.international_format or "—")
+    table.add_row("Local", r.local_format or "—")
+    table.add_row("Country", f"{r.country_name or '?'} (+{r.country_prefix or '?'})")
+    table.add_row("Location", r.location or "—")
+    table.add_row("Carrier", r.carrier or "—")
+    table.add_row("Line Type", r.line_type or "—")
+
+    console.print(table)
+
+
 @click.group()
 def cli() -> None:
     """OSINT Platform — multi-source intelligence aggregation."""
@@ -159,6 +185,14 @@ def domain(domain: str) -> None:
 def email(email: str) -> None:
     """Look up an email address."""
     report = asyncio.run(aggregate(email, "email"))
+    _render_report(report)
+
+
+@cli.command()
+@click.argument("number")
+def phone(number: str) -> None:
+    """Look up a phone number."""
+    report = asyncio.run(aggregate(number, "phone"))
     _render_report(report)
 
 
