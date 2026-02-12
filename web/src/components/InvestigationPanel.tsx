@@ -1,15 +1,30 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Crosshair, User, Mail, Phone, Globe, Building2, Wifi, Loader2,
   ChevronDown, ChevronUp, MapPin, Camera, FileText, Car, Briefcase,
-  GraduationCap, X, Hash, Fingerprint,
+  GraduationCap, X, Hash, Fingerprint, RefreshCw, MessageSquarePlus,
+  Check, Clock, StickyNote, Play, Edit3,
 } from 'lucide-react';
 import { useInvestigate } from '../hooks/useApi';
 import { api } from '../api/client';
 import ResultsMatrix from './ResultsMatrix';
 import LoadingState from './LoadingState';
-import type { InvestigateRequest, InvestigateResponse, PhotoUploadResponse } from '../types';
+import type {
+  InvestigateRequest,
+  InvestigateResponse,
+  InvestigationCreateRequest,
+  InvestigationFull,
+  PhotoUploadResponse,
+  TimelineEvent,
+} from '../types';
+
+/* ─── Props ───────────────────────────────────────────────── */
+
+interface PanelProps {
+  loadInvestigationId?: string | null;
+  onClearLoad?: () => void;
+}
 
 /* ─── Collapsible Section ─────────────────────────────────── */
 
@@ -289,22 +304,137 @@ const socialPlatforms = [
   { key: 'github', label: 'GitHub', placeholder: 'username' },
 ] as const;
 
+/* ─── Timeline Component ──────────────────────────────────── */
+
+function TimelineView({ events }: { events: TimelineEvent[] }) {
+  if (events.length === 0) return null;
+
+  const iconFor = (type: string) => {
+    switch (type) {
+      case 'created': return <Play className="w-3 h-3" />;
+      case 'updated': return <Edit3 className="w-3 h-3" />;
+      case 'rerun': return <RefreshCw className="w-3 h-3" />;
+      case 'note_added': return <StickyNote className="w-3 h-3" />;
+      default: return <Clock className="w-3 h-3" />;
+    }
+  };
+
+  const colorFor = (type: string) => {
+    switch (type) {
+      case 'created': return 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30';
+      case 'rerun': return 'text-blue-400 bg-blue-500/15 border-blue-500/30';
+      case 'note_added': return 'text-yellow-400 bg-yellow-500/15 border-yellow-500/30';
+      case 'updated': return 'text-purple-400 bg-purple-500/15 border-purple-500/30';
+      default: return 'text-gray-400 bg-gray-500/15 border-gray-500/30';
+    }
+  };
+
+  const formatTime = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleString('en-US', {
+      month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
+  };
+
+  return (
+    <div className="relative pl-6 space-y-4">
+      {/* Vertical line */}
+      <div className="absolute left-[11px] top-2 bottom-2 w-px bg-navy-600" />
+      {events.map((ev) => (
+        <div key={ev.id} className="relative flex items-start gap-3">
+          <div className={`absolute left-[-13px] w-6 h-6 rounded-full border flex items-center justify-center ${colorFor(ev.event_type)}`}>
+            {iconFor(ev.event_type)}
+          </div>
+          <div className="ml-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-gray-400 capitalize">
+                {ev.event_type.replace('_', ' ')}
+              </span>
+              <span className="text-[10px] text-gray-600">{formatTime(ev.timestamp)}</span>
+            </div>
+            {ev.description && (
+              <p className="text-xs text-gray-500 mt-0.5">{ev.description}</p>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* ─── Main Component ──────────────────────────────────────── */
 
 const AGE_RANGES = ['', 'Under 18', '18-25', '25-35', '35-45', '45-55', '55-65', '65+'];
 const GENDERS = ['', 'Male', 'Female', 'Non-binary', 'Unknown'];
 
-export default function InvestigationPanel() {
+export default function InvestigationPanel({ loadInvestigationId }: PanelProps) {
   const [form, setForm] = useState<InvestigateRequest>({});
+  const [caseName, setCaseName] = useState('');
   const [aliases, setAliases] = useState<string[]>([]);
   const [socialMedia, setSocialMedia] = useState<Record<string, string>>({});
   const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
   const investigate = useInvestigate();
   const [results, setResults] = useState<InvestigateResponse | null>(null);
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
+  const [rerunning, setRerunning] = useState(false);
+  const [showNoteInput, setShowNoteInput] = useState(false);
+  const [noteText, setNoteText] = useState('');
+  const [addingNote, setAddingNote] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Load an existing investigation when loadInvestigationId changes
+  useEffect(() => {
+    if (!loadInvestigationId) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const inv: InvestigationFull = await api.getInvestigation(loadInvestigationId);
+        if (cancelled) return;
+
+        setCaseName(inv.name || '');
+        setForm({
+          name: inv.subject_name || undefined,
+          email: inv.email || undefined,
+          phone: inv.phone || undefined,
+          ip: inv.ip || undefined,
+          domain: inv.domain || undefined,
+          company: inv.company || undefined,
+          aliases: inv.aliases,
+          date_of_birth: inv.date_of_birth || undefined,
+          age_range: inv.age_range || undefined,
+          location: inv.location || undefined,
+          address: inv.address || undefined,
+          nationality: inv.nationality || undefined,
+          gender: inv.gender || undefined,
+          employer: inv.employer || undefined,
+          occupation: inv.occupation || undefined,
+          education: inv.education || undefined,
+          vehicle: inv.vehicle || undefined,
+          physical_description: inv.physical_description || undefined,
+          notes: inv.notes || undefined,
+        });
+        setAliases(inv.aliases || []);
+        setSocialMedia(inv.social_media || {});
+        setPhotos((inv.photo_ids || []).map((id) => ({
+          id, filename: id, url: api.getPhotoUrl(id),
+        })));
+        setResults(inv.results as InvestigateResponse | null);
+        setSavedId(inv.id);
+        setTimeline(inv.timeline || []);
+      } catch {
+        // ignore
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [loadInvestigationId]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload: InvestigateRequest = { ...form };
+    const payload: InvestigationCreateRequest = { ...form };
 
     // Merge aliases
     if (aliases.length > 0) payload.aliases = aliases;
@@ -321,6 +451,11 @@ export default function InvestigationPanel() {
       payload.company = payload.employer;
     }
 
+    // Case name
+    if (caseName.trim()) {
+      payload.investigation_name = caseName.trim();
+    }
+
     // Validate at least one field
     const hasValue = [
       payload.name, payload.email, payload.phone, payload.ip, payload.domain,
@@ -331,9 +466,49 @@ export default function InvestigationPanel() {
 
     if (!hasValue && !hasAliases && !hasSocial) return;
 
-    investigate.mutate(payload, {
-      onSuccess: (data) => setResults(data),
-    });
+    setSubmitting(true);
+    try {
+      const inv = await api.createInvestigation(payload);
+      setResults(inv.results as InvestigateResponse | null);
+      setSavedId(inv.id);
+      setTimeline(inv.timeline || []);
+    } catch (err: any) {
+      // fallback: run without saving
+      investigate.mutate(payload, {
+        onSuccess: (data) => setResults(data),
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleRerun = async () => {
+    if (!savedId) return;
+    setRerunning(true);
+    try {
+      const inv = await api.rerunInvestigation(savedId);
+      setResults(inv.results as InvestigateResponse | null);
+      setTimeline(inv.timeline || []);
+    } catch {
+      // ignore
+    } finally {
+      setRerunning(false);
+    }
+  };
+
+  const handleAddNote = async () => {
+    if (!savedId || !noteText.trim()) return;
+    setAddingNote(true);
+    try {
+      const event = await api.addNote(savedId, noteText.trim());
+      setTimeline((prev) => [...prev, event]);
+      setNoteText('');
+      setShowNoteInput(false);
+    } catch {
+      // ignore
+    } finally {
+      setAddingNote(false);
+    }
   };
 
   const updateField = (key: string, value: string) => {
@@ -343,6 +518,8 @@ export default function InvestigationPanel() {
   const updateSocial = (platform: string, value: string) => {
     setSocialMedia((prev) => ({ ...prev, [platform]: value }));
   };
+
+  const isLoading = submitting || investigate.isPending;
 
   return (
     <div className="space-y-6">
@@ -355,12 +532,34 @@ export default function InvestigationPanel() {
       >
         <div className="flex items-center gap-3 px-6 pt-6 pb-2">
           <Crosshair className="w-5 h-5 text-accent" />
-          <h2 className="text-lg font-semibold text-gray-100">New Investigation</h2>
+          <h2 className="text-lg font-semibold text-gray-100">
+            {savedId ? 'Investigation' : 'New Investigation'}
+          </h2>
+          {savedId && (
+            <span className="flex items-center gap-1 text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
+              <Check className="w-3 h-3" />
+              Saved
+            </span>
+          )}
           <span className="text-xs text-gray-500">Enter any combination of identifiers</span>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           <div className="flex-1 overflow-y-auto px-6 pb-2 space-y-0">
+
+            {/* ── Case Name ── */}
+            <div className="py-3 border-b border-navy-600/50">
+              <div className="max-w-md">
+                <FieldLabel icon={FileText} label="Case Name" />
+                <input
+                  type="text"
+                  value={caseName}
+                  onChange={(e) => setCaseName(e.target.value)}
+                  placeholder="e.g. John Doe Case"
+                  className={inputClass}
+                />
+              </div>
+            </div>
 
             {/* ── Section 1: Basic Identity (always visible) ── */}
             <div className="py-3 border-b border-navy-600/50">
@@ -615,26 +814,94 @@ export default function InvestigationPanel() {
           </div>
 
           {/* ── Fixed bottom bar ── */}
-          <div className="border-t border-navy-600 px-6 py-4 bg-navy-800 flex items-center gap-4 shrink-0">
+          <div className="border-t border-navy-600 px-6 py-4 bg-navy-800 flex items-center gap-3 shrink-0 flex-wrap">
             <button
               type="submit"
-              disabled={investigate.isPending}
+              disabled={isLoading}
               className="flex items-center gap-2 px-6 py-2.5 bg-accent/10 text-accent border border-accent/20 rounded-lg text-sm font-semibold hover:bg-accent/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
             >
-              {investigate.isPending ? (
+              {isLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Crosshair className="w-4 h-4" />
               )}
-              {investigate.isPending ? 'Investigating...' : 'Run Investigation'}
+              {isLoading ? 'Investigating...' : 'Run Investigation'}
             </button>
-            {investigate.isPending && (
+
+            {savedId && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleRerun}
+                  disabled={rerunning}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-lg text-sm font-medium hover:bg-blue-500/20 disabled:opacity-40 transition-all cursor-pointer"
+                >
+                  <RefreshCw className={`w-4 h-4 ${rerunning ? 'animate-spin' : ''}`} />
+                  Re-run
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowNoteInput(!showNoteInput)}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 rounded-lg text-sm font-medium hover:bg-yellow-500/20 transition-all cursor-pointer"
+                >
+                  <MessageSquarePlus className="w-4 h-4" />
+                  Add Note
+                </button>
+              </>
+            )}
+
+            {savedId && (
+              <span className="text-xs text-gray-600 ml-auto font-mono">
+                ID: {savedId.slice(0, 8)}…
+              </span>
+            )}
+
+            {isLoading && (
               <span className="text-xs text-gray-500 animate-pulse">
                 Querying all providers concurrently...
               </span>
             )}
           </div>
         </form>
+
+        {/* Note input */}
+        <AnimatePresence>
+          {showNoteInput && savedId && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden border-t border-navy-600"
+            >
+              <div className="px-6 py-3 flex items-center gap-3">
+                <input
+                  type="text"
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddNote()}
+                  placeholder="Type a note..."
+                  className={`${inputClass} flex-1`}
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={handleAddNote}
+                  disabled={addingNote || !noteText.trim()}
+                  className="px-4 py-2 bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 rounded-lg text-sm font-medium hover:bg-yellow-500/20 disabled:opacity-40 transition-all cursor-pointer"
+                >
+                  {addingNote ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowNoteInput(false); setNoteText(''); }}
+                  className="p-2 text-gray-500 hover:text-gray-300 transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {investigate.isError && (
           <div className="mx-6 mb-4 bg-threat/10 border border-threat/20 rounded-lg p-3 text-sm text-threat">
@@ -644,8 +911,24 @@ export default function InvestigationPanel() {
       </motion.div>
 
       {/* Results */}
-      {investigate.isPending && <LoadingState count={8} />}
-      {results && !investigate.isPending && <ResultsMatrix data={results} />}
+      {(isLoading || rerunning) && <LoadingState count={8} />}
+      {results && !isLoading && !rerunning && <ResultsMatrix data={results} />}
+
+      {/* Timeline */}
+      {timeline.length > 0 && !isLoading && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-navy-800 border border-navy-600 rounded-xl p-6"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <Clock className="w-4 h-4 text-accent" />
+            <h3 className="text-sm font-semibold text-gray-200">Timeline</h3>
+            <span className="text-xs text-gray-500">{timeline.length} event{timeline.length !== 1 ? 's' : ''}</span>
+          </div>
+          <TimelineView events={timeline} />
+        </motion.div>
+      )}
     </div>
   );
 }

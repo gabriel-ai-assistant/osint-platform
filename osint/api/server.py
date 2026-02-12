@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from osint.api.routes import health, investigate, lookup, photos, providers
+from osint.api.routes import health, investigate, investigations, lookup, photos, providers
 
 # Configure logging
 logging.basicConfig(
@@ -66,6 +66,7 @@ app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(providers.router, prefix="/api", tags=["providers"])
 app.include_router(lookup.router, prefix="/api", tags=["lookup"])
 app.include_router(investigate.router, prefix="/api", tags=["investigate"])
+app.include_router(investigations.router, prefix="/api", tags=["investigations"])
 app.include_router(photos.router, prefix="/api", tags=["photos"])
 
 # Also mount under /osint/api for nginx proxy path
@@ -73,6 +74,7 @@ app.include_router(health.router, prefix="/osint/api", tags=["health"])
 app.include_router(providers.router, prefix="/osint/api", tags=["providers"])
 app.include_router(lookup.router, prefix="/osint/api", tags=["lookup"])
 app.include_router(investigate.router, prefix="/osint/api", tags=["investigate"])
+app.include_router(investigations.router, prefix="/osint/api", tags=["investigations"])
 app.include_router(photos.router, prefix="/osint/api", tags=["photos"])
 
 # Serve static frontend in production

@@ -7,10 +7,14 @@ import type {
   HealthResponse,
   InvestigateRequest,
   InvestigateResponse,
+  InvestigationCreateRequest,
+  InvestigationFull,
+  InvestigationSummary,
   LookupRequest,
   LookupResponse,
   PhotoUploadResponse,
   ProvidersResponse,
+  TimelineEvent,
 } from '../types';
 
 const API_BASE = '/osint/api';
@@ -109,6 +113,46 @@ export const api = {
   },
 
   getPhotoUrl: (id: string): string => `${API_BASE}/photos/${id}`,
+
+  // ── Investigations ─────────────────────────────────────
+  createInvestigation: (data: InvestigationCreateRequest) =>
+    request<InvestigationFull>('/investigations', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  listInvestigations: (status?: string, query?: string) => {
+    const params = new URLSearchParams();
+    if (status) params.set('status', status);
+    if (query) params.set('q', query);
+    const qs = params.toString();
+    return request<InvestigationSummary[]>(`/investigations${qs ? `?${qs}` : ''}`);
+  },
+
+  getInvestigation: (id: string) =>
+    request<InvestigationFull>(`/investigations/${id}`),
+
+  updateInvestigation: (id: string, fields: Record<string, any>) =>
+    request<InvestigationFull>(`/investigations/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(fields),
+    }),
+
+  rerunInvestigation: (id: string) =>
+    request<InvestigationFull>(`/investigations/${id}/rerun`, {
+      method: 'POST',
+    }),
+
+  addNote: (id: string, note: string) =>
+    request<TimelineEvent>(`/investigations/${id}/notes`, {
+      method: 'POST',
+      body: JSON.stringify({ note }),
+    }),
+
+  deleteInvestigation: (id: string) =>
+    request<{ status: string; id: string }>(`/investigations/${id}`, {
+      method: 'DELETE',
+    }),
 };
 
 export { ApiError };

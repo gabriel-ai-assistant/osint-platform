@@ -46,6 +46,73 @@ class InvestigateRequest(BaseModel):
     photo_ids: list[str] = Field(default_factory=list)  # References to uploaded photos
 
 
+class InvestigationCreateRequest(InvestigateRequest):
+    """Investigation creation request with optional case name."""
+
+    investigation_name: str | None = None
+
+
+class InvestigationSummary(BaseModel):
+    """Summary of an investigation for list views."""
+
+    id: str
+    name: str | None = None
+    subject_name: str | None = None
+    status: str
+    created_at: str
+    updated_at: str
+    has_results: bool
+
+
+class InvestigationFull(BaseModel):
+    """Full investigation with all fields, results, and timeline."""
+
+    id: str
+    name: str | None = None
+    status: str
+    created_at: str
+    updated_at: str
+    subject_name: str | None = None
+    aliases: list[str] = []
+    date_of_birth: str | None = None
+    age_range: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    ip: str | None = None
+    domain: str | None = None
+    company: str | None = None
+    employer: str | None = None
+    occupation: str | None = None
+    education: str | None = None
+    location: str | None = None
+    address: str | None = None
+    nationality: str | None = None
+    gender: str | None = None
+    social_media: dict[str, str] = {}
+    vehicle: str | None = None
+    physical_description: str | None = None
+    notes: str | None = None
+    photo_ids: list[str] = []
+    results: dict | None = None
+    timeline: list[dict] = []
+
+
+class TimelineEvent(BaseModel):
+    """A single event on an investigation timeline."""
+
+    id: str
+    timestamp: str
+    event_type: str
+    description: str | None = None
+    data: dict | None = None
+
+
+class AddNoteRequest(BaseModel):
+    """Request body for adding a note."""
+
+    note: str
+
+
 # ── Response Models ─────────────────────────────────────────────
 
 

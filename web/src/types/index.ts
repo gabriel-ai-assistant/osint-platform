@@ -192,4 +192,63 @@ export interface InvestigateResponse {
   timestamp: string;
 }
 
-export type NavPage = 'investigation' | 'lookup' | 'providers';
+/* ── Investigation Persistence Types ───────────────────── */
+
+export interface InvestigationSummary {
+  id: string;
+  name: string | null;
+  subject_name: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  has_results: boolean;
+}
+
+export interface TimelineEvent {
+  id: string;
+  timestamp: string;
+  event_type: string;
+  description: string | null;
+  data: Record<string, any> | null;
+}
+
+export interface InvestigationFull {
+  id: string;
+  name: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  subject_name: string | null;
+  aliases: string[];
+  date_of_birth: string | null;
+  age_range: string | null;
+  email: string | null;
+  phone: string | null;
+  ip: string | null;
+  domain: string | null;
+  company: string | null;
+  employer: string | null;
+  occupation: string | null;
+  education: string | null;
+  location: string | null;
+  address: string | null;
+  nationality: string | null;
+  gender: string | null;
+  social_media: Record<string, string>;
+  vehicle: string | null;
+  physical_description: string | null;
+  notes: string | null;
+  photo_ids: string[];
+  results: InvestigateResponse | null;
+  timeline: TimelineEvent[];
+}
+
+export interface InvestigationCreateRequest extends InvestigateRequest {
+  investigation_name?: string;
+}
+
+export interface AddNoteRequest {
+  note: string;
+}
+
+export type NavPage = 'investigation' | 'investigations' | 'lookup' | 'providers';

@@ -1,4 +1,4 @@
-import { Search, Radar, Server, Crosshair } from 'lucide-react';
+import { Search, Radar, Server, Crosshair, ClipboardList } from 'lucide-react';
 import type { NavPage } from '../types';
 
 interface Props {
@@ -8,6 +8,7 @@ interface Props {
 
 const navItems: { id: NavPage; label: string; icon: React.ElementType }[] = [
   { id: 'investigation', label: 'Investigation', icon: Crosshair },
+  { id: 'investigations', label: 'Investigations', icon: ClipboardList },
   { id: 'lookup', label: 'Quick Lookup', icon: Search },
   { id: 'providers', label: 'Providers', icon: Server },
 ];
