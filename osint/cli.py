@@ -18,6 +18,7 @@ from osint.core.models import (
     IPReport,
 )
 from osint.providers.numverify import PhoneReport
+from osint.providers.opencorporates import CompanyReport
 from osint.providers import ALL_PROVIDERS
 
 console = Console()
@@ -31,6 +32,7 @@ _KEY_MAP: dict[str, str] = {
     "urlscan": "urlscan_api_key",
     "ipinfo": "ipinfo_token",
     "numverify": "numverify_api_key",
+    "opencorporates": "opencorporates_api_key",
 }
 
 
@@ -59,6 +61,8 @@ def _render_report(report: AggregatedReport) -> None:
             _render_email(r)
         elif isinstance(r, PhoneReport):
             _render_phone(r)
+        elif isinstance(r, CompanyReport):
+            _render_company(r)
         else:
             console.print(f"[dim]{r.provider}: {r}[/dim]")
 
@@ -149,6 +153,26 @@ def _render_phone(r: PhoneReport) -> None:
     console.print(table)
 
 
+def _render_company(r: CompanyReport) -> None:
+    table = Table(title=f"Company Report — {r.provider} ({r.total_results} total)", show_lines=True)
+    table.add_column("Name", style="cyan")
+    table.add_column("Jurisdiction")
+    table.add_column("Status")
+    table.add_column("Incorporated")
+    table.add_column("Address")
+
+    for c in r.companies[:10]:
+        table.add_row(
+            c.get("name", "—"),
+            c.get("jurisdiction", "—"),
+            c.get("status", "—"),
+            c.get("incorporation_date", "—"),
+            (c.get("registered_address") or "—")[:60],
+        )
+
+    console.print(table)
+
+
 @click.group()
 def cli() -> None:
     """OSINT Platform — multi-source intelligence aggregation."""
@@ -197,6 +221,14 @@ def phone(number: str) -> None:
 
 
 @cli.command()
+@click.argument("name")
+def company(name: str) -> None:
+    """Look up a company."""
+    report = asyncio.run(aggregate(name, "company"))
+    _render_report(report)
+
+
+@cli.command()
 def providers() -> None:
     """List configured providers and their status."""
     settings = get_settings()
@@ -209,8 +241,11 @@ def providers() -> None:
         name = cls.__name__.replace("Provider", "").lower()
         # Temp instance to get metadata
         key_attr = _KEY_MAP.get(name, f"{name}_api_key")
-        api_key = getattr(settings, key_attr, "")
-        status = "[green]✓ configured[/green]" if api_key else "[red]✗ no key[/red]"
+        if key_attr is None:
+            status = "[green]✓ no key needed[/green]"
+        else:
+            api_key = getattr(settings, key_attr, "")
+            status = "[green]✓ configured[/green]" if api_key else "[red]✗ no key[/red]"
         # Get supported types from class
         dummy_types = cls.__dict__.get("supported_types", property())
         try:

@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     otx_api_key: str = ""
     ipinfo_token: str = ""
     numverify_api_key: str = ""
+    opencorporates_api_key: str = ""
 
     # Cache settings
     cache_dir: str = ".osint_cache"

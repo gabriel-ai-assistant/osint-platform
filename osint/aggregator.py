@@ -25,6 +25,7 @@ _KEY_MAP: dict[str, str] = {
     "urlscan": "urlscan_api_key",
     "ipinfo": "ipinfo_token",
     "numverify": "numverify_api_key",
+    "opencorporates": "opencorporates_api_key",
 }
 
 
@@ -58,6 +59,10 @@ def _build_providers(settings: Settings, cache: Cache) -> list[BaseProvider]:
         # We need to instantiate temporarily to get the name
         name = cls.__name__.replace("Provider", "").lower()
         key_attr = _KEY_MAP.get(name, f"{name}_api_key")
+        if key_attr is None:
+            # No key needed (e.g., OpenCorporates)
+            providers.append(cls(api_key="", cache=cache))
+            continue
         api_key = getattr(settings, key_attr, "")
         if not api_key:
             logger.warning("Skipping %s: no API key configured", name)
