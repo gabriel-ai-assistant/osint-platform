@@ -22,6 +22,7 @@ _KEY_MAP: dict[str, str] = {
     "virustotal": "virustotal_api_key",
     "otx": "otx_api_key",
     "abuseipdb": "abuseipdb_api_key",
+    "urlscan": "urlscan_api_key",
 }
 
 
