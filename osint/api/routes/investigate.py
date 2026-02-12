@@ -21,14 +21,17 @@ from osint.api.models import (
     OrganizationInfo,
     PhoneInfo,
     RelationshipEdge,
+    SocialPresenceProfile,
     ThreatInfo,
 )
 from osint.core.models import (
     AggregatedReport,
     DomainReport,
+    EmailAccountsReport,
     EmailReport,
     IPReport,
     URLReport,
+    UsernameReport,
 )
 
 logger = logging.getLogger(__name__)
@@ -106,6 +109,27 @@ async def investigate(req: InvestigateRequest) -> InvestigateResponse:
     # Use employer as company search if company not provided
     if req.employer and not req.company:
         initial_tasks.append((req.employer.strip(), "company", "employer"))
+
+    # Social media username enumeration (Sherlock / Maigret)
+    # Extract the most prominent username from social_media handles
+    _social_usernames: list[str] = []
+    if req.social_media:
+        for platform, handle in req.social_media.items():
+            # Skip URLs, extract just the username
+            clean = handle.strip().lstrip("@").split("/")[-1].split("?")[0]
+            if clean and not clean.startswith("http"):
+                _social_usernames.append(clean)
+    if _social_usernames:
+        # Run username lookup on the most common / first handle
+        primary_username = _social_usernames[0]
+        initial_tasks.append((primary_username, "username", "social_username"))
+
+    # Email account discovery (Holehe) — run if email provided
+    # Holehe is registered as a provider supporting "email", so it will be
+    # picked up automatically by the aggregator. We add it here explicitly
+    # so we can tag the task.
+    # NOTE: Holehe runs through the normal aggregator since it supports "email"
+    # type — no need to duplicate. It's already in the email query fan-out.
 
     # Fan out all initial queries concurrently
     coros = [_run_query(q, qt) for q, qt, _ in initial_tasks]
@@ -379,6 +403,27 @@ def _build_response(
                 if r.reputation_score is not None:
                     threat_scores.append(r.reputation_score * 100)
 
+    # Handle UsernameReport (Sherlock / Maigret) and EmailAccountsReport (Holehe)
+    social_presence: list[SocialPresenceProfile] = []
+    registered_services: list[str] = []
+
+    for report in results:
+        for r in report.reports:
+            if isinstance(r, UsernameReport):
+                for profile in r.profiles_found:
+                    social_presence.append(SocialPresenceProfile(
+                        platform=profile.platform,
+                        url=profile.url,
+                        username=profile.username,
+                        exists=profile.exists,
+                        category=profile.category,
+                        provider=r.provider,
+                    ))
+            elif isinstance(r, EmailAccountsReport):
+                for svc in r.registered_services:
+                    if svc not in registered_services:
+                        registered_services.append(svc)
+
     # Merge social_media from request into digital footprint
     if req.social_media:
         footprint.social_media = dict(req.social_media)
@@ -445,6 +490,8 @@ def _build_response(
         domain_intel=domain_intel,
         organization=org_info,
         digital_footprint=footprint,
+        social_presence=social_presence,
+        registered_services=registered_services,
         relationships=relationships,
         providers_queried=sorted(all_providers),
         providers_failed=sorted(all_failed),

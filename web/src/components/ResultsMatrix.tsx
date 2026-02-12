@@ -6,6 +6,8 @@ import DataCard from './DataCard';
 import ThreatIndicator from './ThreatIndicator';
 import GeoMap from './GeoMap';
 import NetworkGraph from './NetworkGraph';
+import SocialPresenceCard from './SocialPresenceCard';
+import AccountDiscoveryCard from './AccountDiscoveryCard';
 import { api } from '../api/client';
 import type { InvestigateResponse } from '../types';
 import { motion } from 'framer-motion';
@@ -35,7 +37,7 @@ function makeSocialUrl(platform: string, handle: string): string {
 }
 
 export default function ResultsMatrix({ data }: Props) {
-  const { identity, network, threats, geo, email_intel, phone_intel, domain_intel, organization, digital_footprint, relationships } = data;
+  const { identity, network, threats, geo, email_intel, phone_intel, domain_intel, organization, digital_footprint, social_presence, registered_services, relationships } = data;
 
   const socialMedia = digital_footprint.social_media ?? {};
   const hasSocial = Object.keys(socialMedia).length > 0;
@@ -166,6 +168,20 @@ export default function ResultsMatrix({ data }: Props) {
 
       {/* Intel Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+
+        {/* ── Social Media Presence (Sherlock / Maigret) ── */}
+        {social_presence && social_presence.length > 0 && (
+          <SocialPresenceCard profiles={social_presence} index={0} />
+        )}
+
+        {/* ── Account Discovery (Holehe) ── */}
+        {registered_services && registered_services.length > 0 && (
+          <AccountDiscoveryCard
+            services={registered_services}
+            email={identity.emails?.[0]}
+            index={1}
+          />
+        )}
 
         {/* ── Digital Footprint / Social Media ── */}
         {(hasSocial || digital_footprint.sources.length > 0 || digital_footprint.urls.length > 0) && (

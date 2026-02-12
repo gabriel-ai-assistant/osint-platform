@@ -14,8 +14,10 @@ from osint.config import get_settings
 from osint.core.models import (
     AggregatedReport,
     DomainReport,
+    EmailAccountsReport,
     EmailReport,
     IPReport,
+    UsernameReport,
 )
 from osint.providers.numverify import PhoneReport
 from osint.providers.opencorporates import CompanyReport
@@ -23,7 +25,7 @@ from osint.providers import ALL_PROVIDERS
 
 console = Console()
 
-_KEY_MAP: dict[str, str] = {
+_KEY_MAP: dict[str, str | None] = {
     "shodan": "shodan_api_key",
     "hunter": "hunter_api_key",
     "virustotal": "virustotal_api_key",
@@ -33,6 +35,9 @@ _KEY_MAP: dict[str, str] = {
     "ipinfo": "ipinfo_token",
     "numverify": "numverify_api_key",
     "opencorporates": "opencorporates_api_key",
+    "sherlock": None,
+    "maigret": None,
+    "holehe": None,
 }
 
 
@@ -63,6 +68,10 @@ def _render_report(report: AggregatedReport) -> None:
             _render_phone(r)
         elif isinstance(r, CompanyReport):
             _render_company(r)
+        elif isinstance(r, UsernameReport):
+            _render_username(r)
+        elif isinstance(r, EmailAccountsReport):
+            _render_email_accounts(r)
         else:
             console.print(f"[dim]{r.provider}: {r}[/dim]")
 
@@ -173,6 +182,39 @@ def _render_company(r: CompanyReport) -> None:
     console.print(table)
 
 
+def _render_username(r: UsernameReport) -> None:
+    table = Table(
+        title=f"Username Report — {r.provider} ({len(r.profiles_found)} found / {r.sites_checked} checked)",
+        show_lines=True,
+    )
+    table.add_column("Platform", style="cyan")
+    table.add_column("URL", style="blue")
+    table.add_column("Category", style="dim")
+
+    for p in sorted(r.profiles_found, key=lambda x: x.platform.lower()):
+        table.add_row(
+            p.platform,
+            p.url,
+            p.category or "—",
+        )
+
+    console.print(table)
+
+
+def _render_email_accounts(r: EmailAccountsReport) -> None:
+    table = Table(
+        title=f"Email Account Discovery — {r.provider} ({len(r.registered_services)} found / {r.total_checked} checked)",
+        show_lines=True,
+    )
+    table.add_column("Service", style="cyan")
+    table.add_column("Status", style="green")
+
+    for svc in sorted(r.registered_services):
+        table.add_row(svc, "[green]✓ Registered[/green]")
+
+    console.print(table)
+
+
 @click.group()
 def cli() -> None:
     """OSINT Platform — multi-source intelligence aggregation."""
@@ -225,6 +267,14 @@ def phone(number: str) -> None:
 def company(name: str) -> None:
     """Look up a company."""
     report = asyncio.run(aggregate(name, "company"))
+    _render_report(report)
+
+
+@cli.command()
+@click.argument("username_query")
+def username(username_query: str) -> None:
+    """Look up a username across social media platforms (Sherlock + Maigret)."""
+    report = asyncio.run(aggregate(username_query, "username"))
     _render_report(report)
 
 

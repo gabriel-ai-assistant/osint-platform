@@ -185,6 +185,17 @@ class RelationshipEdge(BaseModel):
     target_type: str = "entity"
 
 
+class SocialPresenceProfile(BaseModel):
+    """A social media profile found during username enumeration."""
+
+    platform: str
+    url: str
+    username: str
+    exists: bool = True
+    category: str | None = None
+    provider: str = ""  # "sherlock" or "maigret"
+
+
 class InvestigateResponse(BaseModel):
     """Full investigation response with cross-referenced data."""
 
@@ -197,6 +208,8 @@ class InvestigateResponse(BaseModel):
     domain_intel: DomainInfo = Field(default_factory=DomainInfo)
     organization: OrganizationInfo = Field(default_factory=OrganizationInfo)
     digital_footprint: DigitalFootprint = Field(default_factory=DigitalFootprint)
+    social_presence: list[SocialPresenceProfile] = Field(default_factory=list)
+    registered_services: list[str] = Field(default_factory=list)
     relationships: list[RelationshipEdge] = Field(default_factory=list)
     providers_queried: list[str] = Field(default_factory=list)
     providers_failed: list[str] = Field(default_factory=list)

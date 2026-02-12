@@ -109,7 +109,39 @@ class URLReport(BaseModel):
     raw: dict[str, Any] = Field(default_factory=dict)
 
 
-ReportType = IPReport | DomainReport | EmailReport | URLReport
+class SocialProfile(BaseModel):
+    """A found social media / website profile."""
+
+    platform: str  # e.g. "Twitter", "Instagram", "Tinder"
+    url: str  # Direct profile URL
+    username: str
+    exists: bool = True
+    category: str | None = None  # e.g. "social", "dating", "coding", "music"
+    extra: dict[str, Any] = Field(default_factory=dict)
+
+
+class UsernameReport(BaseModel):
+    """Report from username enumeration across social platforms."""
+
+    username: str
+    provider: str  # "sherlock" or "maigret"
+    profiles_found: list[SocialProfile] = Field(default_factory=list)
+    sites_checked: int = 0
+    raw: dict[str, Any] = Field(default_factory=dict)
+
+
+class EmailAccountsReport(BaseModel):
+    """Report showing which services an email is registered on."""
+
+    email: str
+    provider: str  # "holehe"
+    registered_services: list[str] = Field(default_factory=list)
+    not_found_services: list[str] = Field(default_factory=list)
+    total_checked: int = 0
+    raw: dict[str, Any] = Field(default_factory=dict)
+
+
+ReportType = IPReport | DomainReport | EmailReport | URLReport | UsernameReport | EmailAccountsReport
 
 
 class AggregatedReport(BaseModel):

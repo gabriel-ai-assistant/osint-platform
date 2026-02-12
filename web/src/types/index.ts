@@ -164,6 +164,15 @@ export interface RelationshipEdge {
   target_type: string;
 }
 
+export interface SocialPresenceProfile {
+  platform: string;
+  url: string;
+  username: string;
+  exists: boolean;
+  category?: string;
+  provider: string;
+}
+
 export interface InvestigateResponse {
   identity: IdentityInfo;
   network: NetworkInfo;
@@ -174,6 +183,8 @@ export interface InvestigateResponse {
   domain_intel: DomainInfo;
   organization: OrganizationInfo;
   digital_footprint: DigitalFootprint;
+  social_presence: SocialPresenceProfile[];
+  registered_services: string[];
   relationships: RelationshipEdge[];
   providers_queried: string[];
   providers_failed: string[];

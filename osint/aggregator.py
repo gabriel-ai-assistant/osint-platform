@@ -16,7 +16,8 @@ from osint.providers.base import BaseProvider
 logger = logging.getLogger(__name__)
 
 # API key field mapping (provider name → settings attribute)
-_KEY_MAP: dict[str, str] = {
+# None means no API key is needed — provider is always available
+_KEY_MAP: dict[str, str | None] = {
     "shodan": "shodan_api_key",
     "hunter": "hunter_api_key",
     "virustotal": "virustotal_api_key",
@@ -26,6 +27,9 @@ _KEY_MAP: dict[str, str] = {
     "ipinfo": "ipinfo_token",
     "numverify": "numverify_api_key",
     "opencorporates": "opencorporates_api_key",
+    "sherlock": None,
+    "maigret": None,
+    "holehe": None,
 }
 
 
@@ -46,21 +50,23 @@ def detect_query_type(query: str) -> str:
     # URL
     if query.startswith(("http://", "https://")):
         return "url"
-    # Domain (fallback)
+    # Domain (fallback — must have a dot)
     if "." in query:
         return "domain"
+    # Username: single word (alphanumeric, underscores, hyphens) that isn't an IP or other type
+    if re.match(r"^[a-zA-Z][a-zA-Z0-9_.-]{0,63}$", query):
+        return "username"
     return "unknown"
 
 
 def _build_providers(settings: Settings, cache: Cache) -> list[BaseProvider]:
-    """Instantiate all providers that have valid API keys."""
+    """Instantiate all providers that have valid API keys (or need no key)."""
     providers: list[BaseProvider] = []
     for cls in ALL_PROVIDERS:
-        # We need to instantiate temporarily to get the name
         name = cls.__name__.replace("Provider", "").lower()
         key_attr = _KEY_MAP.get(name, f"{name}_api_key")
         if key_attr is None:
-            # No key needed (e.g., OpenCorporates)
+            # No key needed — always instantiate (Sherlock, Maigret, Holehe, etc.)
             providers.append(cls(api_key="", cache=cache))
             continue
         api_key = getattr(settings, key_attr, "")
