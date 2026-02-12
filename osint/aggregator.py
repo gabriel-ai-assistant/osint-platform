@@ -21,6 +21,7 @@ _KEY_MAP: dict[str, str] = {
     "hunter": "hunter_api_key",
     "virustotal": "virustotal_api_key",
     "otx": "otx_api_key",
+    "abuseipdb": "abuseipdb_api_key",
 }
 
 
